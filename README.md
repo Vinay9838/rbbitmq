@@ -20,29 +20,71 @@ This project provides a step-by-step guide to install RabbitMQ on an Ubuntu mach
 
 ---
 
-## 1. Install RabbitMQ on Ubuntu
+echo "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -cs) contrib" | sudo tee /etc/apt/sources.list.d/erlang.list
+echo "deb https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+
+## 1. Install RabbitMQ on Ubuntu 24.04
+
+Follow the official RabbitMQ guide for Ubuntu 24.04:
 
 ```bash
-# Update and install dependencies
-sudo apt update
-sudo apt install -y curl gnupg apt-transport-https
+# Install dependencies
+sudo apt-get install -y curl gnupg apt-transport-https
 
-# Add Erlang repository
-curl -fsSL https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | sudo apt-key add -
-echo "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -cs) contrib" | sudo tee /etc/apt/sources.list.d/erlang.list
-sudo apt update
-sudo apt install -y erlang
+# Add RabbitMQ signing key
+curl -1sLf "https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA" \
+   | sudo gpg --dearmor \
+   | sudo tee /usr/share/keyrings/com.rabbitmq.team.gpg > /dev/null
 
-# Add RabbitMQ repository
-curl -fsSL https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey | sudo apt-key add -
-echo "deb https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
-sudo apt update
-sudo apt install -y rabbitmq-server
+# Add the correct apt sources for Ubuntu 24.04
+sudo tee /etc/apt/sources.list.d/rabbitmq.list <<'EOF'
+## Modern Erlang/OTP releases
+##
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb1.rabbitmq.com/rabbitmq-erlang/ubuntu/noble noble main
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb2.rabbitmq.com/rabbitmq-erlang/ubuntu/noble noble main
 
-# Enable and start RabbitMQ
-sudo systemctl enable rabbitmq-server
-sudo systemctl start rabbitmq-server
+## Latest RabbitMQ releases
+##
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb1.rabbitmq.com/rabbitmq-server/ubuntu/noble noble main
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb2.rabbitmq.com/rabbitmq-server/ubuntu/noble noble main
+EOF
+
+# Update and install Erlang + RabbitMQ
+sudo apt-get update -y
+
+# Install Erlang
+sudo apt-get install -y erlang-base \
+   erlang-asn1 erlang-crypto erlang-eldap erlang-ftp erlang-inets \
+   erlang-mnesia erlang-os-mon erlang-parsetools erlang-public-key \
+   erlang-runtime-tools erlang-snmp erlang-ssl \
+   erlang-syntax-tools erlang-tftp erlang-tools erlang-xmerl
+
+# Install RabbitMQ
+sudo apt-get install -y rabbitmq-server --fix-missing
 ```
+
+RabbitMQ will start automatically.
+
+### 2. Verify and enable management UI
+
+Check status:
+
+```bash
+sudo systemctl status rabbitmq-server
+```
+
+Enable the management plugin:
+
+```bash
+sudo rabbitmq-plugins enable rabbitmq_management
+sudo systemctl restart rabbitmq-server
+```
+
+Open in browser:
+
+http://localhost:15672
+
+---
 
 ---
 
